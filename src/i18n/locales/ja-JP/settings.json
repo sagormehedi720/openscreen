@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "背景なし",
 		"motion": "アニメーション",
 		"motionNone": "なし",
 		"motionDrift": "ドリフト",

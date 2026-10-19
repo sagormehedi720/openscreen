@@ -262,6 +262,8 @@ export function parseStylePresetWallpaper(value: unknown, key = "wallpaper"): st
 	const legacy = LEGACY_FILE_WALLPAPER_RE.exec(value);
 	if (legacy) return `/wallpapers/${legacy[1].toLowerCase()}`;
 	if (BUNDLED_WALLPAPER_RE.test(value)) return value;
+	// "No background" (`NO_WALLPAPER` in lib/wallpaper, which this module cannot import).
+	if (value === "none") return value;
 	const trimmed = value.trim();
 	const isCss =
 		HEX_COLOR_RE.test(trimmed) || COLOR_FUNCTION_RE.test(trimmed) || GRADIENT_RE.test(trimmed);

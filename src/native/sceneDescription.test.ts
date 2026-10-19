@@ -210,6 +210,11 @@ describe("buildSceneDescription.background", () => {
 			path: "data:image/png;base64,AAAA",
 		});
 	});
+
+	it('"none" → black, not an image path that never loads', () => {
+		const doc = makeDoc({ legacyEditor: { wallpaper: "none", wallpaperMotion: "drift" } });
+		expect(buildSceneDescription(doc).background).toEqual({ kind: "color", color: "#000000" });
+	});
 });
 
 describe("buildSceneDescription.background motion", () => {

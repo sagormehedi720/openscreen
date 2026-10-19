@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "Nessuno sfondo",
 		"motion": "Animazione",
 		"motionNone": "Nessuno",
 		"motionDrift": "Deriva",

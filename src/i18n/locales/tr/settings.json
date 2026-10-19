@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "Arka plan yok",
 		"motion": "Animasyon",
 		"motionNone": "Yok",
 		"motionDrift": "Kayma",

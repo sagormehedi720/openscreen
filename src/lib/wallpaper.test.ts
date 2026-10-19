@@ -4,6 +4,7 @@ import {
 	BackgroundLoadError,
 	classifyWallpaper,
 	DEFAULT_WALLPAPER,
+	NO_WALLPAPER,
 	resolveImageWallpaperUrl,
 	UnsafeImagePrefixError,
 	WALLPAPER_COUNT,
@@ -109,6 +110,10 @@ describe("classifyWallpaper", () => {
 
 	it("empty string falls back to black", () => {
 		expect(classifyWallpaper("")).toEqual({ kind: "color", value: "#000000" });
+	});
+
+	it("no background paints black", () => {
+		expect(classifyWallpaper(NO_WALLPAPER)).toEqual({ kind: "color", value: "#000000" });
 	});
 
 	it("trims whitespace", () => {

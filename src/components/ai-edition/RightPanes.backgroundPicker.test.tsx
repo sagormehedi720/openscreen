@@ -59,6 +59,13 @@ function precedes(a: Element, b: Element): boolean {
 	return Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 }
 
+describe("no background swatch", () => {
+	it("is only offered when the caller allows it", () => {
+		renderPicker("linear-gradient(135deg, #3b82f6, #8b5cf6)");
+		expect(screen.queryByRole("button", { name: "No background" })).not.toBeInTheDocument();
+	});
+});
+
 describe("gradient tab", () => {
 	const current = "linear-gradient(135deg, #3b82f6, #8b5cf6)";
 

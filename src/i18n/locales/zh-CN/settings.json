@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "无背景",
 		"motion": "动画",
 		"motionNone": "无",
 		"motionDrift": "漂移",

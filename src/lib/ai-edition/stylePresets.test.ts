@@ -262,6 +262,7 @@ describe("parseStylePresetWallpaper", () => {
 		"/wallpapers/wallpaper12.jpg",
 		"data:image/png;base64,iVBORw0KGgo=",
 		"data:image/jpeg;base64,/9j/4AAQ",
+		"none",
 	])("accepts %s", (value) => {
 		expect(parseStylePresetWallpaper(value)).toBe(value);
 	});

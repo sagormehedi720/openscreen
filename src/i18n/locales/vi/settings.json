@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "Không có nền",
 		"motion": "Hoạt ảnh",
 		"motionNone": "Không",
 		"motionDrift": "Trôi",

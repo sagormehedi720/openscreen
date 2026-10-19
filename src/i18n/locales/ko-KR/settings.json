@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "배경 없음",
 		"motion": "애니메이션",
 		"motionNone": "없음",
 		"motionDrift": "드리프트",

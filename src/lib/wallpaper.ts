@@ -22,6 +22,15 @@ export const WALLPAPER_THUMB_PATHS: readonly string[] = WALLPAPER_ORDER.map(
 
 export const DEFAULT_WALLPAPER = WALLPAPER_PATHS[0];
 
+/**
+ * "No background": the recording alone. Stored as a wallpaper like any other, so it saves,
+ * undoes and travels in style presets. The picker drops the padding to 0 with it, so under
+ * Auto or an Original format nothing of it shows; wherever the frame still leaves room (a
+ * fixed format, padding put back by hand) it paints black, what a player shows around a
+ * picture that does not fill it.
+ */
+export const NO_WALLPAPER = "none";
+
 export type WallpaperClassification =
 	| { kind: "color"; value: string }
 	| { kind: "gradient"; value: string }
@@ -33,7 +42,7 @@ const IMAGE_URL_RE = /^(\/|https?:\/\/|file:\/\/|data:)/;
 
 export function classifyWallpaper(value: string): WallpaperClassification {
 	const trimmed = value.trim();
-	if (trimmed === "") {
+	if (trimmed === "" || trimmed === NO_WALLPAPER) {
 		return { kind: "color", value: "#000000" };
 	}
 	// Multi-background (e.g. "url(noise), linear-gradient(...)") - peel

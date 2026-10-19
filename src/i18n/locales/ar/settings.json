@@ -1,5 +1,6 @@
 {
 	"background": {
+		"none": "بلا خلفية",
 		"motion": "التحريك",
 		"motionNone": "بلا",
 		"motionDrift": "انجراف",

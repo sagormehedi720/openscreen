@@ -8,6 +8,7 @@
 import {
 	AppWindow,
 	AudioLines,
+	Ban,
 	Camera,
 	Captions as CaptionsIcon,
 	FileText,
@@ -83,6 +84,7 @@ import {
 	AUDIO_TRACK_GAIN_DB_MAX,
 	AUDIO_TRACK_GAIN_DB_MIN,
 	DEFAULT_EDITOR_SETTINGS,
+	type EditorSettingsPatch,
 } from "@/lib/ai-edition/store/editorSettings";
 import { useProjectStore } from "@/lib/ai-edition/store/projectStore";
 import { useCaptions } from "@/lib/ai-edition/store/useCaptions";
@@ -138,6 +140,7 @@ import {
 } from "@/lib/projectDefaults";
 import {
 	classifyWallpaper,
+	NO_WALLPAPER,
 	resolveImageWallpaperUrl,
 	WALLPAPER_PATHS,
 	WALLPAPER_THUMB_PATHS,
@@ -397,8 +400,19 @@ const WALLPAPER_MOTION_LABEL_KEYS: Record<WallpaperMotion, string> = {
 function BackgroundSection() {
 	const ts = useScopedT("settings");
 	const { settings, set, setLive, commit, hasDocument } = useEditorSettings();
+	const isNone = settings.wallpaper === NO_WALLPAPER;
+	// Padding is what lets a background show, so "None" takes it to 0 and the recording fills
+	// the frame. Leaving "None" while it is still 0 brings the default back, or the wallpaper
+	// just picked would not show either. Padding set by hand under "None" is kept.
+	const backgroundPatch = (wallpaper: string): EditorSettingsPatch => {
+		if (wallpaper === NO_WALLPAPER) return { wallpaper, padding: 0 };
+		if (isNone && settings.padding === 0) {
+			return { wallpaper, padding: DEFAULT_EDITOR_SETTINGS.padding };
+		}
+		return { wallpaper };
+	};
 	const { pick: handlePickFile, input: fileInput } = useWallpaperFileInput((dataUrl) =>
-		set({ wallpaper: dataUrl }),
+		set(backgroundPatch(dataUrl)),
 	);
 
 	return (
@@ -410,8 +424,9 @@ function BackgroundSection() {
 			<WallpaperPicker
 				value={settings.wallpaper}
 				hasDocument={hasDocument}
-				onChange={(url) => void set({ wallpaper: url })}
-				onLiveChange={(url) => setLive({ wallpaper: url })}
+				allowNone
+				onChange={(url) => void set(backgroundPatch(url))}
+				onLiveChange={(url) => setLive(backgroundPatch(url))}
 				onCommit={commit}
 				onPickFile={handlePickFile}
 			/>
@@ -436,25 +451,28 @@ function BackgroundSection() {
 			) : null}
 			{/* Reads in the order it acts: pick a background, then blur it. Lived under
 			    "Effects" while that was a separate facet, which is how a control named
-			    "Blur BG" ended up in the tab that doesn't say background. */}
-			<div className={styles.sliderGrid}>
-				<SliderCell
-					label={ts("effects.blurBg")}
-					value={settings.backgroundBlur * 100}
-					min={0}
-					max={100}
-					defaultValue={DEFAULT_EDITOR_SETTINGS.backgroundBlur * 100}
-					suffix="%"
-					disabled={!hasDocument}
-					onChange={(v) => {
-						setLive({ backgroundBlur: v / 100 });
-						if (isNativeCompositorActive()) {
-							setNativeParam("backgroundBlur", v / 100);
-						}
-					}}
-					onCommit={() => void commit()}
-				/>
-			</div>
+			    "Blur BG" ended up in the tab that doesn't say background. Gone with "None",
+			    like the motion row: there is nothing to blur. */}
+			{isNone ? null : (
+				<div className={styles.sliderGrid}>
+					<SliderCell
+						label={ts("effects.blurBg")}
+						value={settings.backgroundBlur * 100}
+						min={0}
+						max={100}
+						defaultValue={DEFAULT_EDITOR_SETTINGS.backgroundBlur * 100}
+						suffix="%"
+						disabled={!hasDocument}
+						onChange={(v) => {
+							setLive({ backgroundBlur: v / 100 });
+							if (isNativeCompositorActive()) {
+								setNativeParam("backgroundBlur", v / 100);
+							}
+						}}
+						onCommit={() => void commit()}
+					/>
+				</div>
+			)}
 		</>
 	);
 }
@@ -529,6 +547,7 @@ function BackgroundColorTab({
 	onLive,
 	onCommit,
 	updateNative = true,
+	leading,
 }: {
 	value: string;
 	hasDocument: boolean;
@@ -537,6 +556,8 @@ function BackgroundColorTab({
 	onLive: (next: string) => void;
 	onCommit: () => void;
 	updateNative?: boolean;
+	/** Drawn before the palette, in the same grid: the picker's "None" swatch. */
+	leading?: ReactNode;
 }) {
 	const ts = useScopedT("settings");
 	const pushNative = (color: string) => {
@@ -548,6 +569,7 @@ function BackgroundColorTab({
 	return (
 		<>
 			<div className={styles.bgGrid} style={{ margin: "0 var(--sp-4) 12px" }}>
+				{leading}
 				{COLOR_PALETTE.map((c) => (
 					<button
 						type="button"
@@ -587,6 +609,9 @@ export interface WallpaperPickerProps {
 	/** Opens the OS file dialog. The hidden `<input>` it clicks belongs to the caller
 	 *  (see `useWallpaperFileInput`): where it may be mounted depends on the caller. */
 	onPickFile: () => void;
+	/** Offer a "None" swatch, which picks `NO_WALLPAPER`. Off for the camera's own
+	 *  background, where "no background" is a mode of its own. */
+	allowNone?: boolean;
 }
 
 export function WallpaperPicker({
@@ -597,6 +622,7 @@ export function WallpaperPicker({
 	onCommit,
 	updateNativeBackground = true,
 	onPickFile,
+	allowNone = false,
 }: WallpaperPickerProps) {
 	const ts = useScopedT("settings");
 	// Seeded from what is actually in use, so the picker opens on the tab the user is
@@ -618,6 +644,23 @@ export function WallpaperPicker({
 			: (gradientSeedColor(value) ?? GRADIENT_SEED_FALLBACK);
 
 	const isSelected = (candidate: string) => value === candidate;
+	// First in every tab rather than a tab of its own: "None" is not a kind of wallpaper, and
+	// the picker opens on whichever tab `classifyWallpaper` names (colour, for "None"), so the
+	// swatch has to be there to show as picked. Dashed like the upload button and the camera's
+	// "no background": the outline of something not drawn.
+	const noneSwatch = allowNone ? (
+		<Tooltip content={ts("background.none")}>
+			<button
+				type="button"
+				className={`${styles.bgThumb} ${styles.bgAdd} ${isSelected(NO_WALLPAPER) ? styles.isActive : ""}`}
+				aria-label={ts("background.none")}
+				disabled={!hasDocument}
+				onClick={() => onChange(NO_WALLPAPER)}
+			>
+				<Ban size={15} />
+			</button>
+		</Tooltip>
+	) : null;
 	const tabs = [
 		{ id: "image", label: ts("background.image") },
 		{ id: "gradient", label: ts("background.gradient") },
@@ -645,7 +688,8 @@ export function WallpaperPicker({
 			</div>
 			{tab === "image" ? (
 				<div className={styles.bgGrid}>
-					{/* First, so it is found without scrolling past the bundled set. */}
+					{noneSwatch}
+					{/* Up front, so it is found without scrolling past the bundled set. */}
 					<Tooltip content={ts("background.uploadCustom")}>
 						<button
 							type="button"
@@ -692,10 +736,12 @@ export function WallpaperPicker({
 					onLive={live}
 					onCommit={commit}
 					updateNative={updateNativeBackground}
+					leading={noneSwatch}
 				/>
 			) : (
 				<>
 					<div className={styles.bgGrid}>
+						{noneSwatch}
 						{GRAD_PRESETS.map((bg, i) => (
 							<button
 								type="button"

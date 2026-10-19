@@ -68,7 +68,7 @@ import type { CursorKind } from "@/lib/cursor/cursorThemes";
 import { parseCssGradient, resolveLinearGradientAngle } from "@/lib/exporter/gradientParser";
 import type { FrameTheme, RecordingFrame, WebcamAnchor } from "@/lib/projectDefaults";
 import { resolveTextFontFamily } from "@/lib/textFonts";
-import { classifyWallpaper } from "@/lib/wallpaper";
+import { classifyWallpaper, NO_WALLPAPER } from "@/lib/wallpaper";
 import type { CompositorClipInput } from "./contracts";
 import { ROUNDNESS_REFERENCE_PX } from "./paramUnits";
 
@@ -612,6 +612,11 @@ export interface SceneWebcamEffect {
 
 /** Parse the settings wallpaper string into the discriminated SceneBackground union. */
 function parseWallpaper(wallpaper: string) {
+	// Black, as `classifyWallpaper` reads it: without this the string reached the compositor
+	// as an image path that never loads.
+	if (wallpaper === NO_WALLPAPER) {
+		return { kind: "color", color: "#000000" } as const;
+	}
 	if (wallpaper.startsWith("#")) {
 		return { kind: "color", color: wallpaper } as const;
 	}
